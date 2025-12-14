@@ -65,10 +65,10 @@ jobs:
             dotnet build $p -c Release -p:EnableWindowsTargeting=true --no-restore
           }
 
-      - name: Publish managed app (no ReadyToRun)
+      - name: Publish managed app (x64, no ReadyToRun)
         shell: pwsh
         run: |
-          dotnet publish src/Files.App/Files.App.csproj -c Release -p:EnableWindowsTargeting=true -p:PublishReadyToRun=false -o "src/Files.App/bin/Publish" || exit 0
+          dotnet publish src/Files.App/Files.App.csproj -c Release -p:EnableWindowsTargeting=true -p:PublishReadyToRun=false -p:Platform=x64 -r win-x64 --self-contained false -o "src/Files.App/bin/Publish"
 
       - name: Upload build artifacts
         if: always()
