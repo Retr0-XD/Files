@@ -49,6 +49,29 @@ jobs:
       - name: Build
         run: dotnet build Files.slnx -c Release --no-restore
 
+      - name: Publish app (sideload)
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          # Try publishing the sideload package (may require VS components in hosted runner)
+          dotnet build "src/Files.App (Package)/Files.Package.wapproj" -c Release
+          # Collect common output folders
+          $out = @()
+          $out += "src/Files.App/bin/Release"
+          $out += "src/Files.App (Package)/bin/Release"
+          $out += "src/Files.App (Package)/AppPackages"
+          $out | ForEach-Object { if (Test-Path $_) { Write-Host "Found output: $_" } }
+
+      - name: Upload build artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build-outputs
+          path: |
+            src/Files.App/bin/Release
+            src/Files.App (Package)/bin/Release
+            src/Files.App (Package)/AppPackages
+
       - name: Run interaction tests
         continue-on-error: true
         run: dotnet test tests/Files.InteractionTests/Files.InteractionTests.csproj -c Release --no-build --logger "trx;LogFileName=interactiontests.trx"
