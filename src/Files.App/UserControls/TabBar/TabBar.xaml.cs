@@ -309,7 +309,7 @@ namespace Files.App.UserControls.TabBar
 			catch (Exception ex)
 			{
 				// Log the exception for visibility
-				App.Logger.LogWarning(ex, "Failed while handling middle-click on tab bar empty area.");
+				App.Logger.LogWarning(ex, "Failed while handling drop operation on tab bar.");
 			}
 
 			_lockDropOperation = false;
@@ -391,7 +391,11 @@ namespace Files.App.UserControls.TabBar
 					e.Handled = true;
 				}
 			}
-			catch { }
+			catch (Exception ex)
+			{
+				// Log the exception for visibility
+				App.Logger.LogWarning(ex, "Failed while handling middle-click on tab bar empty area.");
+			}
 		}
 	}
 }
