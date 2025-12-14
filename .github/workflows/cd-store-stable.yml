@@ -13,6 +13,9 @@
 name: Files CD (Store Stable)
 
 on:
+  push:
+    branches:
+      - feature/middle-click-tabs
   workflow_dispatch:
 
 jobs:
