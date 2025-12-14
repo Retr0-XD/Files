@@ -30,7 +30,7 @@ jobs:
           & msbuild -version
 
       - name: Restore solution
-        run: dotnet restore Files.slnx -p:EnableWindowsTargeting=true
+        run: dotnet restore Files.slnx -p:EnableWindowsTargeting=true -p:SkipSatori=true
 
       - name: Build app controls/storage (x64)
         shell: pwsh
@@ -40,7 +40,7 @@ jobs:
             'src/Files.App.Storage/Files.App.Storage.csproj'
           )
           foreach ($p in $projects) {
-            dotnet build $p -c Release -p:EnableWindowsTargeting=true -p:Platform=x64 -r win-x64 --no-restore
+            dotnet build $p -c Release -p:EnableWindowsTargeting=true -p:SkipSatori=true -p:Platform=x64 -r win-x64 --no-restore
           }
 
       - name: Build MSIX packaging project (unsigned)
@@ -56,9 +56,10 @@ jobs:
             '/p:AppxBundlePlatforms=x64',
             '/p:GenerateAppxPackageOnBuild=true',
             '/p:PackageCertificateThumbprint=',
-            '/p:AppxPackageSigningEnabled=false'
+            '/p:AppxPackageSigningEnabled=false',
+            '/p:SkipSatori=true'
           )
-          & msbuild $wapproj $props
+          & msbuild $wapproj $props /bl:package.binlog
 
       - name: Locate AppPackages
         id: findpackages
@@ -80,3 +81,4 @@ jobs:
           path: |
             src/Files.App (Package)/AppPackages
             src/Files.App (Package)/bin/Release
+            package.binlog
