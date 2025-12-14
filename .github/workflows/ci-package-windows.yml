@@ -1,0 +1,82 @@
+name: Package (Windows MSIX)
+
+on:
+  push:
+    branches:
+      - feature/middle-click-tabs
+  workflow_dispatch:
+
+jobs:
+  package-msix:
+    runs-on: windows-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Install MSBuild (Visual Studio Build Tools)
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Print environment
+        shell: pwsh
+        run: |
+          dotnet --info
+          & msbuild -version
+
+      - name: Restore solution
+        run: dotnet restore Files.slnx -p:EnableWindowsTargeting=true
+
+      - name: Build app controls/storage (x64)
+        shell: pwsh
+        run: |
+          $projects = @(
+            'src/Files.App.Controls/Files.App.Controls.csproj',
+            'src/Files.App.Storage/Files.App.Storage.csproj'
+          )
+          foreach ($p in $projects) {
+            dotnet build $p -c Release -p:EnableWindowsTargeting=true -p:Platform=x64 -r win-x64 --no-restore
+          }
+
+      - name: Build MSIX packaging project (unsigned)
+        shell: pwsh
+        run: |
+          # Build the WAP project with MSBuild; skip signing and store upload
+          $wapproj = "src/Files.App (Package)/Files.Package.wapproj"
+          $props = @(
+            '/p:Configuration=Release',
+            '/p:Platform=x64',
+            '/p:UapAppxPackageBuildMode=StoreUpload',
+            '/p:AppxBundle=Always',
+            '/p:AppxBundlePlatforms=x64',
+            '/p:GenerateAppxPackageOnBuild=true',
+            '/p:PackageCertificateThumbprint=',
+            '/p:AppxPackageSigningEnabled=false'
+          )
+          & msbuild $wapproj $props
+
+      - name: Locate AppPackages
+        id: findpackages
+        shell: pwsh
+        run: |
+          $pkgRoot = "src/Files.App (Package)/AppPackages"
+          if (Test-Path $pkgRoot) {
+            Write-Host "Found AppPackages at $pkgRoot"
+            Get-ChildItem -Recurse $pkgRoot | ForEach-Object { Write-Host $_.FullName }
+          } else {
+            Write-Host "AppPackages folder not found."
+          }
+
+      - name: Upload MSIX artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: msix-bundle
+          path: |
+            src/Files.App (Package)/AppPackages
+            src/Files.App (Package)/bin/Release
