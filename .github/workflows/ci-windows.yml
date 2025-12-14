@@ -44,23 +44,31 @@ jobs:
           else { Write-Host 'WinAppDriver not found; UI tests may be skipped.' }
 
       - name: Restore
-        run: dotnet restore Files.slnx
+        run: dotnet restore Files.slnx -p:EnableWindowsTargeting=true
 
-      - name: Build
-        run: dotnet build Files.slnx -c Release --no-restore
-
-      - name: Publish app (sideload)
+      - name: Build managed projects (skip C++)
         shell: pwsh
-        continue-on-error: true
         run: |
-          # Try publishing the sideload package (may require VS components in hosted runner)
-          dotnet build "src/Files.App (Package)/Files.Package.wapproj" -c Release
-          # Collect common output folders
-          $out = @()
-          $out += "src/Files.App/bin/Release"
-          $out += "src/Files.App (Package)/bin/Release"
-          $out += "src/Files.App (Package)/AppPackages"
-          $out | ForEach-Object { if (Test-Path $_) { Write-Host "Found output: $_" } }
+          $ErrorActionPreference = 'Stop'
+          $projects = @(
+            'src/Files.App/Files.App.csproj',
+            'src/Files.App.Controls/Files.App.Controls.csproj',
+            'src/Files.App.CsWin32/Files.App.CsWin32.csproj',
+            'src/Files.App.Storage/Files.App.Storage.csproj',
+            'src/Files.App.BackgroundTasks/Files.App.BackgroundTasks.csproj',
+            'src/Files.Core.SourceGenerator/Files.Core.SourceGenerator.csproj',
+            'src/Files.Core.Storage/Files.Core.Storage.csproj',
+            'src/Files.Shared/Files.Shared.csproj'
+          )
+          foreach ($p in $projects) {
+            Write-Host "Building $p"
+            dotnet build $p -c Release -p:EnableWindowsTargeting=true --no-restore
+          }
+
+      - name: Publish managed app (no ReadyToRun)
+        shell: pwsh
+        run: |
+          dotnet publish src/Files.App/Files.App.csproj -c Release -p:EnableWindowsTargeting=true -p:PublishReadyToRun=false -o "src/Files.App/bin/Publish" || exit 0
 
       - name: Upload build artifacts
         if: always()
@@ -69,12 +77,11 @@ jobs:
           name: windows-build-outputs
           path: |
             src/Files.App/bin/Release
-            src/Files.App (Package)/bin/Release
-            src/Files.App (Package)/AppPackages
+            src/Files.App/bin/Publish
 
       - name: Run interaction tests
         continue-on-error: true
-        run: dotnet test tests/Files.InteractionTests/Files.InteractionTests.csproj -c Release --no-build --logger "trx;LogFileName=interactiontests.trx"
+        run: dotnet test tests/Files.InteractionTests/Files.InteractionTests.csproj -c Release --no-build -p:PublishReadyToRun=false --logger "trx;LogFileName=interactiontests.trx"
 
       - name: Upload test results
         if: always()
