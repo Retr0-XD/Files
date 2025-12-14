@@ -1,5 +1,9 @@
 ﻿<Project>
-  <Target Name="FetchSatori" AfterTargets="ResolveRuntimePackAssets">
+  <PropertyGroup>
+    <SkipSatori Condition=" '$(SkipSatori)' == '' ">false</SkipSatori>
+  </PropertyGroup>
+
+  <Target Name="FetchSatori" AfterTargets="ResolveRuntimePackAssets" Condition=" '$(SkipSatori)' != 'true' ">
     <DownloadFile
         SourceUrl="https://github.com/files-community/Satori/releases/latest/download/windows_$(Platform).zip"
         DestinationFolder="$(IntermediateOutputPath)$([System.Guid]::NewGuid().ToString('N'))"
@@ -8,7 +12,7 @@
     </DownloadFile>
   </Target>
 
-  <Target Name="ExtractSatori" AfterTargets="FetchSatori" DependsOnTargets="FetchSatori">
+  <Target Name="ExtractSatori" AfterTargets="FetchSatori" DependsOnTargets="FetchSatori" Condition=" '$(SkipSatori)' != 'true' ">
     <Unzip
         SourceFiles="@(SatoriArchive)"
         DestinationFolder="$(IntermediateOutputPath)Satori"
@@ -17,7 +21,7 @@
     <Delete Files="@(SatoriArchive)" />
   </Target>
 
-  <Target Name="IncludeSatoriInRuntimePackAssets" AfterTargets="ExtractSatori" DependsOnTargets="ExtractSatori">
+  <Target Name="IncludeSatoriInRuntimePackAssets" AfterTargets="ExtractSatori" DependsOnTargets="ExtractSatori" Condition=" '$(SkipSatori)' != 'true' ">
     <ItemGroup>
       <RuntimePackAsset Remove="@(RuntimePackAsset)"
                         Condition=" '%(RuntimePackAsset.Filename)' == 'coreclr'

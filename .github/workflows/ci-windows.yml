@@ -62,13 +62,19 @@ jobs:
           )
           foreach ($p in $projects) {
             Write-Host "Building $p"
-            dotnet build $p -c Release -p:EnableWindowsTargeting=true --no-restore
+            dotnet build $p -c Release -p:EnableWindowsTargeting=true -p:SkipSatori=true --no-restore
           }
+
+      - name: Build Files.App with MSBuild (binlog)
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          & "${Env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin\MSBuild.exe" src/Files.App/Files.App.csproj /t:Restore,Build /p:Configuration=Release /p:Platform=x64 /p:EnableWindowsTargeting=true /p:SkipSatori=true /bl:files-app.binlog
 
       - name: Publish managed app (x64, no ReadyToRun)
         shell: pwsh
         run: |
-          dotnet publish src/Files.App/Files.App.csproj -c Release -p:EnableWindowsTargeting=true -p:PublishReadyToRun=false -p:Platform=x64 -r win-x64 --self-contained false -o "src/Files.App/bin/Publish"
+          dotnet publish src/Files.App/Files.App.csproj -c Release -p:EnableWindowsTargeting=true -p:PublishReadyToRun=false -p:Platform=x64 -p:SkipSatori=true -r win-x64 --self-contained false -o "src/Files.App/bin/Publish"
 
       - name: Upload build artifacts
         if: always()
@@ -78,6 +84,7 @@ jobs:
           path: |
             src/Files.App/bin/Release
             src/Files.App/bin/Publish
+            files-app.binlog
 
       - name: Run interaction tests
         continue-on-error: true
