@@ -382,12 +382,24 @@ namespace Files.App.UserControls.TabBar
 		{
 			try
 			{
-				if (e.GetCurrentPoint(null).Properties.IsMiddleButtonPressed)
+				var pt = e.GetCurrentPoint(null);
+				App.Logger.LogInformation("TabBar empty area pointer pressed: Middle={Middle}, Left={Left}, Right={Right}, Handled={Handled}",
+					pt.Properties.IsMiddleButtonPressed, pt.Properties.IsLeftButtonPressed, pt.Properties.IsRightButtonPressed, e.Handled);
+				if (pt.Properties.IsMiddleButtonPressed)
 				{
-					// Invoke New Tab command
-					await Commands.NewTab.ExecuteAsync();
+					// Invoke New Tab command if enabled
+					if (Commands.NewTab.CanExecute(null))
+					{
+						App.Logger.LogInformation("Middle-click detected on empty tab bar; executing NewTab.");
+						await Commands.NewTab.ExecuteAsync();
+					}
+					else
+					{
+						App.Logger.LogWarning("Middle-click detected but NewTab command cannot execute right now.");
+					}
 					// Mark handled so no further handlers process it
 					e.Handled = true;
+					App.Logger.LogInformation("Pointer event marked handled after middle-click.");
 				}
 			}
 			catch (Exception ex)
