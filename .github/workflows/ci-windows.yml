@@ -22,6 +22,9 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
       - name: Print environment
         run: |
           dotnet --info
@@ -69,7 +72,16 @@ jobs:
         shell: pwsh
         continue-on-error: true
         run: |
-          & "${Env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin\MSBuild.exe" src/Files.App/Files.App.csproj /t:Restore,Build /p:Configuration=Release /p:Platform=x64 /p:EnableWindowsTargeting=true /p:SkipSatori=true /bl:files-app.binlog
+          msbuild src/Files.App/Files.App.csproj /t:Restore,Build /p:Configuration=Release /p:Platform=x64 /p:EnableWindowsTargeting=true /p:SkipSatori=true /bl:files-app.binlog
+
+      - name: Collect XAML compiler inputs
+        if: always()
+        shell: pwsh
+        run: |
+          $obj = Get-ChildItem -Recurse -Path src/Files.App/obj -Filter input.json | Select-Object -First 1
+          if ($null -ne $obj) { Copy-Item $obj.FullName -Destination input.json }
+          $out = Get-ChildItem -Recurse -Path src/Files.App/obj -Filter output.json | Select-Object -First 1
+          if ($null -ne $out) { Copy-Item $out.FullName -Destination output.json }
 
       - name: Publish managed app (x64, no ReadyToRun)
         shell: pwsh
@@ -85,6 +97,8 @@ jobs:
             src/Files.App/bin/Release
             src/Files.App/bin/Publish
             files-app.binlog
+            input.json
+            output.json
 
       - name: Run interaction tests
         continue-on-error: true
