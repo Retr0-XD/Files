@@ -378,12 +378,11 @@ namespace Files.App.UserControls.TabBar
 				HorizontalTabView.ActualHeight));
 		}
 
-		private async void DragAreaRectangle_PointerReleased(object sender, PointerRoutedEventArgs e)
+		private async void DragAreaRectangle_PointerPressed(object sender, PointerRoutedEventArgs e)
 		{
 			try
 			{
-				var kind = e.GetCurrentPoint(null).Properties.PointerUpdateKind;
-				if (kind is PointerUpdateKind.MiddleButtonReleased)
+				if (e.GetCurrentPoint(null).Properties.IsMiddleButtonPressed)
 				{
 					// Invoke New Tab command
 					await Commands.NewTab.ExecuteAsync();
